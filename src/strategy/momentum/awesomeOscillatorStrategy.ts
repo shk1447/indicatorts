@@ -16,11 +16,14 @@ import {
  * @param config configuration.
  * @return strategy actions.
  */
-export function aoStrategy(asset: Asset, config: AOConfig = {}): Action[] {
+export function aoStrategy(
+  asset: Asset,
+  config: AOConfig = {}
+): { actions: Action[]; result: number[] } {
   const strategyConfig = { ...AODefaultConfig, ...config };
   const result = ao(asset.highs, asset.lows, strategyConfig);
 
-  return result.map((value) => {
+  const actions = result.map((value) => {
     if (value > 0) {
       return Action.BUY;
     } else if (value < 0) {
@@ -29,6 +32,11 @@ export function aoStrategy(asset: Asset, config: AOConfig = {}): Action[] {
       return Action.HOLD;
     }
   });
+
+  return {
+    actions,
+    result,
+  };
 }
 
 // Export full name

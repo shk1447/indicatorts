@@ -19,24 +19,27 @@ import {
  * @param config configuration.
  * @returns strategy actions.
  */
-export function vwmaStrategy(asset: Asset, config: VWMAConfig = {}): Action[] {
+export function vwmaStrategy(
+  asset: Asset,
+  config: VWMAConfig = {}
+): { actions: Action[]; result: { sma: number[]; vwma: number[] } } {
   const strategyConfig = { ...VWMADefaultConfig, ...config };
   const smaValues = sma(asset.closings, strategyConfig);
   const vwmaValues = vwma(asset.closings, asset.volumes, strategyConfig);
 
-  const result = new Array<Action>(vwmaValues.length);
+  const actions = new Array<Action>(vwmaValues.length);
 
-  for (let i = 0; i < result.length; i++) {
+  for (let i = 0; i < actions.length; i++) {
     if (vwmaValues[i] > smaValues[i]) {
-      result[i] = Action.BUY;
+      actions[i] = Action.BUY;
     } else if (vwmaValues[i] < smaValues[i]) {
-      result[i] = Action.SELL;
+      actions[i] = Action.SELL;
     } else {
-      result[i] = Action.HOLD;
+      actions[i] = Action.HOLD;
     }
   }
 
-  return result;
+  return { actions, result: { sma: smaValues, vwma: vwmaValues } };
 }
 
 // Export full name

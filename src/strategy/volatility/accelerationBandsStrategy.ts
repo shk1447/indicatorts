@@ -5,6 +5,7 @@ import { Asset } from '../asset';
 import { Action } from '../action';
 import {
   ABConfig,
+  ABResult,
   ABDefaultConfig,
   ab,
 } from '../../indicator/volatility/accelerationBands';
@@ -16,7 +17,10 @@ import {
  * @param config configuration.
  * @return strategy actions.
  */
-export function abStrategy(asset: Asset, config: ABConfig = {}): Action[] {
+export function abStrategy(
+  asset: Asset,
+  config: ABConfig = {}
+): { actions: Action[]; result: ABResult } {
   const strategyConfig = { ...ABDefaultConfig, ...config };
   const result = ab(asset.highs, asset.lows, asset.closings, strategyConfig);
 
@@ -30,7 +34,7 @@ export function abStrategy(asset: Asset, config: ABConfig = {}): Action[] {
     }
   }
 
-  return actions;
+  return { actions, result };
 }
 
 // Export full name

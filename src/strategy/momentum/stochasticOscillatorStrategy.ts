@@ -5,6 +5,7 @@ import { Asset } from '../asset';
 import { Action } from '../action';
 import {
   StochConfig,
+  StochResult,
   StochDefaultConfig,
   stoch,
 } from '../../indicator/momentum/stochasticOscillator';
@@ -19,7 +20,7 @@ import {
 export function stochStrategy(
   asset: Asset,
   config: StochConfig = {}
-): Action[] {
+): { actions: Action[]; result: StochResult } {
   const strategyConfig = { ...StochDefaultConfig, ...config };
   const result = stoch(asset.highs, asset.lows, asset.closings, strategyConfig);
 
@@ -35,7 +36,7 @@ export function stochStrategy(
     }
   }
 
-  return actions;
+  return { actions, result };
 }
 
 // Export full name

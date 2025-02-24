@@ -20,7 +20,7 @@ export function backtest(
   const result = new Array<StrategyResult>(infos.length);
 
   for (let i = 0; i < result.length; i++) {
-    const actions = infos[i].strategy(asset);
+    const { actions } = infos[i].strategy(asset);
     const gains = applyActions(asset.closings, actions);
 
     result[i] = {

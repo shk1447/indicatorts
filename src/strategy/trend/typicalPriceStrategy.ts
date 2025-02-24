@@ -11,7 +11,10 @@ import { typprice } from '../../indicator/trend/typicalPrice';
  * @param asset asset object.
  * @return strategy actions.
  */
-export function typpriceStrategy(asset: Asset): Action[] {
+export function typpriceStrategy(asset: Asset): {
+  actions: Action[];
+  result: number[];
+} {
   const result = typprice(asset.highs, asset.lows, asset.closings);
 
   const actions = new Array<Action>(result.length);
@@ -27,7 +30,7 @@ export function typpriceStrategy(asset: Asset): Action[] {
     }
   }
 
-  return actions;
+  return { actions, result };
 }
 
 // Export full name

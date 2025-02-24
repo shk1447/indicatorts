@@ -5,6 +5,7 @@ import { Asset } from '../asset';
 import { Action } from '../action';
 import {
   PSARConfig,
+  PSARResult,
   PSARDefaultConfig,
   psar,
 } from '../../indicator/trend/parabolicSar';
@@ -17,11 +18,13 @@ import { Trend } from '../../indicator/types';
  * @param config configuration.
  * @return strategy actions.
  */
-export function psarStrategy(asset: Asset, config: PSARConfig = {}): Action[] {
+export function psarStrategy(
+  asset: Asset,
+  config: PSARConfig = {}
+): { actions: Action[]; result: PSARResult } {
   const strategyConfig = { ...PSARDefaultConfig, ...config };
   const result = psar(asset.highs, asset.lows, asset.closings, strategyConfig);
-
-  return result.trends.map((trend) => {
+  const actions = result.trends.map((trend) => {
     switch (trend) {
       case Trend.FALLING:
         return Action.SELL;
@@ -33,6 +36,8 @@ export function psarStrategy(asset: Asset, config: PSARConfig = {}): Action[] {
         return Action.HOLD;
     }
   });
+
+  return { actions, result };
 }
 
 // Export full name

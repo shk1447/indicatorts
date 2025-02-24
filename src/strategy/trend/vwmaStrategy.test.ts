@@ -24,8 +24,8 @@ describe('Volume Weighted Moving Average (VWMA) stategy', () => {
       Action.SELL,
     ];
 
-    const actual = vwmaStrategy(asset, { period: 3 });
-    deepStrictEqual(actual, expected);
+    const { actions } = vwmaStrategy(asset, { period: 3 });
+    deepStrictEqual(actions, expected);
   });
 
   it('should be able to compute without a config', () => {
@@ -45,7 +45,7 @@ describe('Volume Weighted Moving Average (VWMA) stategy', () => {
       Action.SELL,
     ];
 
-    const actual = vwmaStrategy(asset);
-    deepStrictEqual(actual, expected);
+    const { actions } = vwmaStrategy(asset);
+    deepStrictEqual(actions, expected);
   });
 });

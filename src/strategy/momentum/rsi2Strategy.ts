@@ -12,7 +12,10 @@ import { rsi } from '../../indicator/momentum/relativeStrengthIndex';
  * @param asset asset object.
  * @returns strategy actions.
  */
-export function rsi2Strategy(asset: Asset): Action[] {
+export function rsi2Strategy(asset: Asset): {
+  actions: Action[];
+  result: number[];
+} {
   const indicator = rsi(asset.closings, { period: 2 });
 
   const actions = new Array<Action>(indicator.length);
@@ -26,5 +29,5 @@ export function rsi2Strategy(asset: Asset): Action[] {
     }
   }
 
-  return actions;
+  return { actions, result: indicator };
 }

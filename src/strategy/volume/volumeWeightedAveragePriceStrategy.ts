@@ -20,7 +20,10 @@ import { Asset } from '../asset';
  * @param config configuration.
  * @returns strategy actions.
  */
-export function vwapStrategy(asset: Asset, config: VWAPConfig = {}): Action[] {
+export function vwapStrategy(
+  asset: Asset,
+  config: VWAPConfig = {}
+): { actions: Action[]; result: number[] } {
   const strategyConfig = {
     ...VWAPDefaultConfig,
     ...config,
@@ -28,8 +31,7 @@ export function vwapStrategy(asset: Asset, config: VWAPConfig = {}): Action[] {
   const result = vwap(asset.closings, asset.volumes, strategyConfig);
 
   const diff = subtract(result, asset.closings);
-
-  return diff.map((value) => {
+  const actions = diff.map((value) => {
     if (value > 0) {
       return Action.BUY;
     } else if (value < 0) {
@@ -38,6 +40,8 @@ export function vwapStrategy(asset: Asset, config: VWAPConfig = {}): Action[] {
       return Action.HOLD;
     }
   });
+
+  return { actions, result };
 }
 
 // Export full name

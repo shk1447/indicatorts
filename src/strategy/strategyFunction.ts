@@ -7,4 +7,7 @@ import { Asset } from './asset';
 /**
  * Strategy function.
  */
-export type StrategyFunction = (asset: Asset) => Action[];
+export type StrategyFunction = (asset: Asset) => {
+  actions: Action[];
+  result: unknown;
+};

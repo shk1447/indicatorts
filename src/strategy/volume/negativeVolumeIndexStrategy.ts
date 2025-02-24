@@ -20,7 +20,10 @@ import { Asset } from '../asset';
  * @param config configuration.
  * @returns strategy actions.
  */
-export function nviStrategy(asset: Asset, config: NVIConfig = {}): Action[] {
+export function nviStrategy(
+  asset: Asset,
+  config: NVIConfig = {}
+): { actions: Action[]; result: { nvi: number[]; ema: number[] } } {
   const strategyConfig = { ...NVIDefaultConfig, ...config };
   const result = nvi(asset.closings, asset.volumes, strategyConfig);
 
@@ -38,7 +41,7 @@ export function nviStrategy(asset: Asset, config: NVIConfig = {}): Action[] {
     }
   }
 
-  return actions;
+  return { actions, result: { nvi: result, ema: nviEma } };
 }
 
 // Export full name

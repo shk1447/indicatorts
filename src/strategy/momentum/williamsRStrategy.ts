@@ -19,11 +19,11 @@ import {
 export function willRStrategy(
   asset: Asset,
   config: WillrConfig = {}
-): Action[] {
+): { actions: Action[]; result: number[] } {
   const strategyConfig = { ...WillrDefaultConfig, ...config };
   const result = willr(asset.highs, asset.lows, asset.closings, strategyConfig);
 
-  return result.map((value) => {
+  const actions = result.map((value) => {
     if (value <= -80) {
       return Action.BUY;
     } else if (value >= -20) {
@@ -32,6 +32,8 @@ export function willRStrategy(
       return Action.HOLD;
     }
   });
+
+  return { actions, result };
 }
 
 // Export full name

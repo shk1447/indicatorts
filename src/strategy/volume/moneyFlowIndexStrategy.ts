@@ -16,7 +16,10 @@ import { Asset } from '../asset';
  * @param config configuration.
  * @return strategy actions.
  */
-export function mfiStrategy(asset: Asset, config: MFIConfig = {}): Action[] {
+export function mfiStrategy(
+  asset: Asset,
+  config: MFIConfig = {}
+): { actions: Action[]; result: number[] } {
   const strategyConfig = { ...MFIDefaultConfig, ...config };
   const result = mfi(
     asset.highs,
@@ -26,13 +29,15 @@ export function mfiStrategy(asset: Asset, config: MFIConfig = {}): Action[] {
     strategyConfig
   );
 
-  return result.map((value) => {
+  const actions = result.map((value) => {
     if (value >= 80) {
       return Action.SELL;
     } else {
       return Action.BUY;
     }
   });
+
+  return { actions, result };
 }
 
 // Export full name

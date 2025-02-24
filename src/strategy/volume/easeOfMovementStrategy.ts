@@ -16,11 +16,13 @@ import { Asset } from '../asset';
  * @param config configuration.
  * @returns strategy actions.
  */
-export function emvStrategy(asset: Asset, config: EMVConfig = {}): Action[] {
+export function emvStrategy(
+  asset: Asset,
+  config: EMVConfig = {}
+): { actions: Action[]; result: number[] } {
   const strategyConfig = { ...EMVDefaultConfig, ...config };
   const result = emv(asset.highs, asset.lows, asset.volumes, strategyConfig);
-
-  return result.map((value) => {
+  const actions = result.map((value) => {
     if (value > 0) {
       return Action.BUY;
     } else if (value < 0) {
@@ -29,6 +31,8 @@ export function emvStrategy(asset: Asset, config: EMVConfig = {}): Action[] {
       return Action.HOLD;
     }
   });
+
+  return { actions, result };
 }
 
 // Export full name

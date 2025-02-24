@@ -11,10 +11,12 @@ import { bop } from '../../indicator/trend/balanceOfPower';
  * @param asset asset object.
  * @return strategy actions.
  */
-export function bopStrategy(asset: Asset): Action[] {
+export function bopStrategy(asset: Asset): {
+  actions: Action[];
+  result: number[];
+} {
   const result = bop(asset.openings, asset.highs, asset.lows, asset.closings);
-
-  return result.map((value) => {
+  const actions = result.map((value) => {
     if (value > 0) {
       return Action.BUY;
     } else if (value < 0) {
@@ -23,6 +25,8 @@ export function bopStrategy(asset: Asset): Action[] {
       return Action.HOLD;
     }
   });
+
+  return { actions, result };
 }
 
 // Export full name

@@ -16,11 +16,13 @@ import { Asset } from '../asset';
  * @param config configuration.
  * @returns strategy actions.
  */
-export function fiStrategy(asset: Asset, config: FIConfig = {}): Action[] {
+export function fiStrategy(
+  asset: Asset,
+  config: FIConfig = {}
+): { actions: Action[]; result: number[] } {
   const strategyConfig = { ...FIDefaultConfig, ...config };
   const result = fi(asset.closings, asset.volumes, strategyConfig);
-
-  return result.map((value) => {
+  const actions = result.map((value) => {
     if (value > 0) {
       return Action.BUY;
     } else if (value < 0) {
@@ -29,6 +31,8 @@ export function fiStrategy(asset: Asset, config: FIConfig = {}): Action[] {
       return Action.HOLD;
     }
   });
+
+  return { actions, result };
 }
 
 // Export full name

@@ -16,7 +16,10 @@ import {
  * @param config configuration.
  * @return strategy actions.
  */
-export function apoStrategy(asset: Asset, config: APOConfig = {}): Action[] {
+export function apoStrategy(
+  asset: Asset,
+  config: APOConfig = {}
+): { actions: Action[]; result: number[] } {
   const { fast, slow } = {
     ...APODefaultConfig,
     ...config,
@@ -34,7 +37,7 @@ export function apoStrategy(asset: Asset, config: APOConfig = {}): Action[] {
     }
   }
 
-  return actions;
+  return { actions, result };
 }
 
 // Export full name

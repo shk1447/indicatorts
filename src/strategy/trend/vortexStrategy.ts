@@ -5,6 +5,7 @@ import { Asset } from '../asset';
 import { Action } from '../action';
 import {
   VortexConfig,
+  VortexResult,
   VortexDefaultConfig,
   vortex,
 } from '../../indicator/trend/vortex';
@@ -18,7 +19,7 @@ import {
 export function vortexStrategy(
   asset: Asset,
   config: VortexConfig = {}
-): Action[] {
+): { actions: Action[]; result: VortexResult } {
   const strategyConfig = { ...VortexDefaultConfig, ...config };
   const indicator = vortex(
     asset.highs,
@@ -39,5 +40,5 @@ export function vortexStrategy(
     }
   }
 
-  return actions;
+  return { actions, result: indicator };
 }

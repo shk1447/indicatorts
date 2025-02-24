@@ -5,6 +5,7 @@ import { Asset } from '../asset';
 import { Action } from '../action';
 import {
   POConfig,
+  POResult,
   PODefaultConfig,
   po,
 } from '../../indicator/volatility/projectionOscillator';
@@ -16,7 +17,10 @@ import {
  * @param config configuration.
  * @return strategy actions.
  */
-export function poStrategy(asset: Asset, config: POConfig = {}): Action[] {
+export function poStrategy(
+  asset: Asset,
+  config: POConfig = {}
+): { actions: Action[]; result: POResult } {
   const strategyConfig = { ...PODefaultConfig, ...config };
   const result = po(asset.highs, asset.lows, asset.closings, strategyConfig);
 
@@ -32,7 +36,7 @@ export function poStrategy(asset: Asset, config: POConfig = {}): Action[] {
     }
   }
 
-  return actions;
+  return { actions, result };
 }
 
 // Export full name

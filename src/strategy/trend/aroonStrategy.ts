@@ -5,6 +5,7 @@ import { Asset } from '../asset';
 import { Action } from '../action';
 import {
   AroonConfig,
+  AroonResult,
   AroonDefaultConfig,
   aroon,
 } from '../../indicator/trend/aroon';
@@ -18,7 +19,7 @@ import {
 export function aroonStrategy(
   asset: Asset,
   config: AroonConfig = {}
-): Action[] {
+): { actions: Action[]; result: AroonResult } {
   const strategyConfig = { ...AroonDefaultConfig, ...config };
   const indicator = aroon(asset.highs, asset.lows, strategyConfig);
 
@@ -34,5 +35,5 @@ export function aroonStrategy(
     }
   }
 
-  return actions;
+  return { actions, result: indicator };
 }

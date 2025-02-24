@@ -19,7 +19,10 @@ import { Asset } from '../asset';
  * @param config configuration.
  * @returns strategy actions.
  */
-export function cmfStrategy(asset: Asset, config: CMFConfig = {}): Action[] {
+export function cmfStrategy(
+  asset: Asset,
+  config: CMFConfig = {}
+): { actions: Action[]; result: number[] } {
   const strategyConfig = { ...CMFDefaultConfig, ...config };
   const result = cmf(
     asset.highs,
@@ -29,7 +32,7 @@ export function cmfStrategy(asset: Asset, config: CMFConfig = {}): Action[] {
     strategyConfig
   );
 
-  return result.map((value) => {
+  const actions = result.map((value) => {
     if (value < 0) {
       return Action.BUY;
     } else if (value > 0) {
@@ -38,6 +41,8 @@ export function cmfStrategy(asset: Asset, config: CMFConfig = {}): Action[] {
       return Action.HOLD;
     }
   });
+
+  return { actions, result };
 }
 
 // Export full name

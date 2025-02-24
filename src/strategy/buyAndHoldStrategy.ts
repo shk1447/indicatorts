@@ -10,6 +10,12 @@ import { Action } from './action';
  * @param asset asset object.
  * @return strategy actions.
  */
-export function buyAndHoldStrategy(asset: Asset): Action[] {
-  return Array<Action>(asset.closings.length).fill(Action.BUY);
+export function buyAndHoldStrategy(asset: Asset): {
+  actions: Action[];
+  result: number[];
+} {
+  return {
+    actions: Array<Action>(asset.closings.length).fill(Action.BUY),
+    result: asset.closings,
+  };
 }

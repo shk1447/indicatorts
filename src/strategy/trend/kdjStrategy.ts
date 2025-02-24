@@ -5,6 +5,7 @@ import { Asset } from '../asset';
 import { Action } from '../action';
 import {
   KDJConfig,
+  KDJResult,
   KDJDefaultConfig,
   kdj,
 } from '../../indicator/trend/randomIndex';
@@ -15,7 +16,10 @@ import {
  * @param config configuration.
  * @return strategy actions.
  */
-export function kdjStrategy(asset: Asset, config: KDJConfig = {}): Action[] {
+export function kdjStrategy(
+  asset: Asset,
+  config: KDJConfig = {}
+): { actions: Action[]; result: KDJResult } {
   const strategyConfig = { ...KDJDefaultConfig, ...config };
   const kdjResult = kdj(
     asset.highs,
@@ -35,5 +39,5 @@ export function kdjStrategy(asset: Asset, config: KDJConfig = {}): Action[] {
     }
   }
 
-  return actions;
+  return { actions, result: kdjResult };
 }

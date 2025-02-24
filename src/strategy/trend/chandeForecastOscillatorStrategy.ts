@@ -11,10 +11,12 @@ import { cfo } from '../../indicator/trend/chandeForecastOscillator';
  * @param asset asset object.
  * @return strategy actions.
  */
-export function cfoStrategy(asset: Asset): Action[] {
+export function cfoStrategy(asset: Asset): {
+  actions: Action[];
+  result: number[];
+} {
   const result = cfo(asset.closings);
-
-  return result.map((value) => {
+  const actions = result.map((value) => {
     if (value > 0) {
       return Action.BUY;
     } else if (value < 0) {
@@ -23,6 +25,8 @@ export function cfoStrategy(asset: Asset): Action[] {
       return Action.HOLD;
     }
   });
+
+  return { actions, result };
 }
 
 // Export full name

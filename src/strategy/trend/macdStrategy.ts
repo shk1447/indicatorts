@@ -5,6 +5,7 @@ import { Asset } from '../asset';
 import { Action } from '../action';
 import {
   MACDConfig,
+  MACDResult,
   MACDDefaultConfig,
   macd,
 } from '../../indicator/trend/movingAverageConvergenceDivergence';
@@ -15,7 +16,10 @@ import {
  * @param config configuration.
  * @return strategy actions.
  */
-export function macdStrategy(asset: Asset, config: MACDConfig = {}): Action[] {
+export function macdStrategy(
+  asset: Asset,
+  config: MACDConfig = {}
+): { actions: Action[]; result: MACDResult } {
   const strategyConfig = { ...MACDDefaultConfig, ...config };
   const result = macd(asset.closings, strategyConfig);
   const actions = new Array<number>(result.macdLine.length);
@@ -30,7 +34,7 @@ export function macdStrategy(asset: Asset, config: MACDConfig = {}): Action[] {
     }
   }
 
-  return actions;
+  return { actions, result };
 }
 
 // Export full name
