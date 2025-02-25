@@ -25,10 +25,20 @@ export function macdStrategy(
   const actions = new Array<number>(result.macdLine.length);
 
   for (let i = 0; i < actions.length; i++) {
-    if (result.macdLine[i] > result.signalLine[i]) {
-      actions[i] = Action.BUY;
-    } else if (result.macdLine[i] < result.signalLine[i]) {
-      actions[i] = Action.SELL;
+    if (i > 0) {
+      if (
+        result.macdLine[i] > result.signalLine[i] &&
+        result.macdLine[i - 1] <= result.signalLine[i - 1]
+      ) {
+        actions[i] = Action.BUY;
+      } else if (
+        result.macdLine[i] < result.signalLine[i] &&
+        result.macdLine[i - 1] >= result.signalLine[i - 1]
+      ) {
+        actions[i] = Action.SELL;
+      } else {
+        actions[i] = Action.HOLD;
+      }
     } else {
       actions[i] = Action.HOLD;
     }
