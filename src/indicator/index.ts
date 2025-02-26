@@ -5,4 +5,5 @@ export * from './momentum/index';
 export * from './trend/index';
 export * from './volatility/index';
 export * from './volume/index';
+export * from './special/index';
 export * from './types';
