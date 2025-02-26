@@ -3,6 +3,8 @@
 /* eslint-disable no-var */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { sma } from '../trend/simpleMovingAverage';
+
 export type SegmentationResult = {
   init_trend: 1 | -1;
   curr_trend: 1 | -1;
@@ -46,63 +48,65 @@ export class StockAnalysis {
       var min_idx = data.indexOf(min);
       var max_idx = data.indexOf(max);
 
-      const trend_type: any = min_idx < max_idx ? 'upward' : 'downward';
+      if (min_idx !== max_idx) {
+        const trend_type: any = min_idx < max_idx ? 'upward' : 'downward';
 
-      const range =
-        trend_type == 'upward'
-          ? [min_idx, max_idx + 1]
-          : [max_idx, min_idx + 1];
+        const range =
+          trend_type == 'upward'
+            ? [min_idx, max_idx + 1]
+            : [max_idx, min_idx + 1];
 
-      if (!result.init_trend)
-        result.init_trend = trend_type == 'upward' ? 1 : -1;
+        if (!result.init_trend)
+          result.init_trend = trend_type == 'upward' ? 1 : -1;
 
-      switch (trend_type) {
-        case 'upward':
-          var std_degree =
-            (Math.atan2(max - min, range[1] - range[0]) * 180) / Math.PI;
-          result.segmentation.push({
-            from: min,
-            to: max,
-            min: min,
-            max: max,
-            degree: std_degree,
-            type: trend_type,
-          });
+        switch (trend_type) {
+          case 'upward':
+            var std_degree =
+              (Math.atan2(max - min, range[1] - range[0]) * 180) / Math.PI;
+            result.segmentation.push({
+              from: min,
+              to: max,
+              min: min,
+              max: max,
+              degree: std_degree,
+              type: trend_type,
+            });
 
-          this.trend(
-            [...data].slice(range[0], range[1]),
-            result,
-            trend_type,
-            min
-          );
-          data = data.slice(max_idx);
-          result.curr_trend = trend_type == 'upward' ? 1 : -1;
+            this.trend(
+              [...data].slice(range[0], range[1]),
+              result,
+              trend_type,
+              min
+            );
+            data = data.slice(max_idx);
+            result.curr_trend = trend_type == 'upward' ? 1 : -1;
 
-          break;
-        case 'downward':
-          var std_degree =
-            (Math.atan2(min - max, range[1] - range[0]) * 180) / Math.PI;
-          result.segmentation.push({
-            from: max,
-            to: min,
-            min: min,
-            max: max,
-            degree: std_degree,
-            type: trend_type,
-          });
-          this.trend(
-            [...data].slice(range[0], range[1]),
-            result,
-            trend_type,
-            max
-          );
-          data = data.slice(min_idx);
-          result.curr_trend = trend_type == 'upward' ? 1 : -1;
+            break;
+          case 'downward':
+            var std_degree =
+              (Math.atan2(min - max, range[1] - range[0]) * 180) / Math.PI;
+            result.segmentation.push({
+              from: max,
+              to: min,
+              min: min,
+              max: max,
+              degree: std_degree,
+              type: trend_type,
+            });
+            this.trend(
+              [...data].slice(range[0], range[1]),
+              result,
+              trend_type,
+              max
+            );
+            data = data.slice(min_idx);
+            result.curr_trend = trend_type == 'upward' ? 1 : -1;
 
-          break;
+            break;
+        }
+
+        this.segmentationByClose(data, result);
       }
-
-      this.segmentationByClose(data, result);
     }
   }
   trend(data: number[], result: any, trend_type: any, firstValue: any) {
@@ -264,11 +268,19 @@ function getBreakoutSignals(data: number[], result: SegmentationResult) {
     currentIndex
   );
 
+  const resistanceLevels = resist.map((r) => {
+    return r.close;
+  });
+
+  const supportLevels = support.map((s) => {
+    return s.close;
+  });
+
   return {
     resistanceBreak: resist.length > 0,
     supportBreak: support.length > 0,
-    resistanceLevels: resist.map((r) => r.close),
-    supportLevels: support.map((s) => s.close),
+    resistanceLevels,
+    supportLevels,
   };
 }
 
@@ -287,10 +299,10 @@ export interface RMSConfig {
 }
 
 /**
- * The default configuration of SMA.
+ * The default configuration of RMS.
  */
 export const RMSDefaultConfig: Required<RMSConfig> = {
-  period: 2,
+  period: 20,
 };
 
 /**
@@ -301,23 +313,26 @@ export const RMSDefaultConfig: Required<RMSConfig> = {
  */
 
 export type AnalysisResult = {
-  trendReversals: { index: number; type: string; strength: number }[];
-  breakouts: {
-    resistanceBreak: boolean;
-    supportBreak: boolean;
-    resistanceLevels: number[];
-    supportLevels: number[];
-  };
-  trendStrength: number;
+  // trendReversals: { index: number; type: string; strength: number }[];
+  // breakouts: {
+  //   resistanceBreak: boolean;
+  //   supportBreak: boolean;
+  //   resistanceLevels: number[];
+  //   supportLevels: number[];
+  // };
+
+  trendStrength: number[];
 };
 
-export function rms(
-  values: number[],
-  config: RMSConfig = {}
-): AnalysisResult[] {
+export function rms(values: number[], config: RMSConfig = {}): AnalysisResult {
+  const { period } = { ...RMSDefaultConfig, ...config };
   const analysis = new StockAnalysis();
 
-  const result: AnalysisResult[] = [];
+  const result: AnalysisResult = {
+    trendStrength: [],
+  };
+
+  let sumTrendStrength = 0;
 
   for (let i = 0; i < values.length; i++) {
     const segR: SegmentationResult = {
@@ -327,15 +342,25 @@ export function rms(
       upward_point: [],
       downward_point: [],
     };
-    analysis.segmentationByClose(values, segR);
+    analysis.segmentationByClose(values.slice(0, i + 1), segR);
 
-    const analysisR = {
-      trendReversals: getTrendReversalSignals(segR.segmentation),
-      breakouts: getBreakoutSignals(values, segR),
-      trendStrength: calculateTrendStrength(segR.segmentation),
-    };
+    // const analysisR = {
+    //   trendReversals: getTrendReversalSignals(segR.segmentation),
+    //   breakouts: getBreakoutSignals(values, segR),
+    //   trendStrength: calculateTrendStrength(segR.segmentation),
+    // };
 
-    result.push(analysisR);
+    result.trendStrength.push(calculateTrendStrength(segR.segmentation));
+
+    sumTrendStrength += result.trendStrength[i];
+
+    if (i >= period) {
+      sumTrendStrength -= result.trendStrength[i - period];
+
+      result.trendStrength[i] = sumTrendStrength / period;
+    } else {
+      result.trendStrength[i] = sumTrendStrength / (i + 1);
+    }
   }
 
   return result;
