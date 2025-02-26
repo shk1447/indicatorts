@@ -16,7 +16,7 @@ export function rmsStrategy(
 
   for (let i = 0; i < actions.length; i++) {
     if (i > 0) {
-      if (result.trendStrength[i] <= 0 && result.trendStrength[i - 1] > 0) {
+      if (result.trendStrength[i] > 0 && result.trendStrength[i - 1] <= 0) {
         actions[i] = Action.BUY;
       } else {
         actions[i] = Action.SELL;
