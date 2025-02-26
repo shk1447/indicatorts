@@ -29,12 +29,27 @@ export function ichimokuCloudStrategy(
     strategyConfig
   );
 
-  const actions = new Array<Action>(indicator.kijun.length);
+  const actions = new Array<Action>(indicator.kijun.length).fill(Action.HOLD);
 
-  for (let i = 0; i < actions.length; i++) {
-    if (indicator.ssa[i] > indicator.ssb[i]) {
+  for (let i = 1; i < actions.length; i++) {
+    const currentClose = asset.closings[i];
+    const currentSSA = indicator.ssa[i];
+    const currentSSB = indicator.ssb[i];
+    const priceAboveCloud =
+      currentClose > currentSSA && currentClose > currentSSB;
+    const priceBelowCloud =
+      currentClose < currentSSA && currentClose < currentSSB;
+
+    const tenkanCrossAbove =
+      indicator.tenkan[i] > indicator.kijun[i] &&
+      indicator.tenkan[i - 1] <= indicator.kijun[i - 1];
+    const tenkanCrossBelow =
+      indicator.tenkan[i] < indicator.kijun[i] &&
+      indicator.tenkan[i - 1] >= indicator.kijun[i - 1];
+
+    if (tenkanCrossAbove && priceAboveCloud) {
       actions[i] = Action.BUY;
-    } else if (indicator.ssa[i] < indicator.ssb[i]) {
+    } else if (tenkanCrossBelow && priceBelowCloud) {
       actions[i] = Action.SELL;
     } else {
       actions[i] = Action.HOLD;
