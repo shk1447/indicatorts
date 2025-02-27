@@ -3,8 +3,6 @@
 /* eslint-disable no-var */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { sma } from '../trend/simpleMovingAverage';
-
 export type SegmentationResult = {
   init_trend: 1 | -1;
   curr_trend: 1 | -1;
@@ -15,6 +13,20 @@ export type SegmentationResult = {
     max: number;
     degree: number;
     type: 'upward' | 'downward';
+    upward_point: {
+      degree: number;
+      close: number;
+      diff: number;
+      date: number;
+      seg_idx: number;
+    }[];
+    downward_point: {
+      degree: number;
+      close: number;
+      diff: number;
+      date: number;
+      seg_idx: number;
+    }[];
   }[];
   upward_point: {
     degree: number;
@@ -70,6 +82,8 @@ export class StockAnalysis {
               max: max,
               degree: std_degree,
               type: trend_type,
+              upward_point: [],
+              downward_point: [],
             });
 
             this.trend(
@@ -92,6 +106,8 @@ export class StockAnalysis {
               max: max,
               degree: std_degree,
               type: trend_type,
+              upward_point: [],
+              downward_point: [],
             });
             this.trend(
               [...data].slice(range[0], range[1]),
@@ -161,6 +177,15 @@ export class StockAnalysis {
         result.segmentation[result.segmentation.length - 1].avg =
           (result.segmentation[result.segmentation.length - 1].avg + _close) /
           2;
+        result.segmentation[result.segmentation.length - 1][
+          trend_type + '_point'
+        ].push({
+          degree: min_degree,
+          close: _close,
+          diff: diff,
+          date: (min_idx + 1) * 1000,
+          seg_idx: result.segmentation.length - 1,
+        });
         result[trend_type + '_point'].push({
           degree: min_degree,
           close: _close,
@@ -284,7 +309,9 @@ function getBreakoutSignals(data: number[], result: SegmentationResult) {
   };
 }
 
-function calculateTrendStrength(segments: SegmentationResult['segmentation']) {
+function simpleCalculateTrendStrength(
+  segments: SegmentationResult['segmentation']
+) {
   if (segments.length === 0) return 0;
 
   const currentTrend = segments[segments.length - 1];
@@ -294,15 +321,52 @@ function calculateTrendStrength(segments: SegmentationResult['segmentation']) {
   return currentTrend.degree - avgDegree;
 }
 
+function calculateTrendStrength(segments: SegmentationResult['segmentation']) {
+  if (segments.length === 0) return 0;
+
+  const calculateSegmentStrength = (seg: (typeof segments)[0]) => {
+    let avgDiff = 0;
+    let count = 0;
+
+    if (seg.type === 'upward') {
+      count = seg.upward_point.length;
+      if (count > 0) {
+        avgDiff = seg.upward_point.reduce((sum, p) => sum + p.diff, 0) / count;
+      }
+    } else {
+      count = seg.downward_point.length;
+      if (count > 0) {
+        avgDiff =
+          seg.downward_point.reduce((sum, p) => sum + p.diff, 0) / count;
+      }
+    }
+
+    return seg.degree * (1 + avgDiff * count);
+  };
+
+  const currentSeg = segments[segments.length - 1];
+  const currentStrength = calculateSegmentStrength(currentSeg);
+
+  const totalStrength = segments.reduce(
+    (sum, seg) => sum + calculateSegmentStrength(seg),
+    0
+  );
+  const avgStrength = totalStrength / segments.length;
+
+  return currentStrength - avgStrength;
+}
+
 export interface RMSConfig {
-  period?: number;
+  short?: number;
+  long?: number;
 }
 
 /**
  * The default configuration of RMS.
  */
 export const RMSDefaultConfig: Required<RMSConfig> = {
-  period: 20,
+  short: 20,
+  long: 60,
 };
 
 /**
@@ -322,17 +386,20 @@ export type AnalysisResult = {
   // };
 
   trendStrength: number[];
+  longTrendStrength: number[];
 };
 
 export function rms(values: number[], config: RMSConfig = {}): AnalysisResult {
-  const { period } = { ...RMSDefaultConfig, ...config };
+  const { short, long } = { ...RMSDefaultConfig, ...config };
   const analysis = new StockAnalysis();
 
   const result: AnalysisResult = {
     trendStrength: [],
+    longTrendStrength: [],
   };
 
   let sumTrendStrength = 0;
+  let sumLongTrendStrength = 0;
 
   for (let i = 0; i < values.length; i++) {
     const segR: SegmentationResult = {
@@ -344,22 +411,22 @@ export function rms(values: number[], config: RMSConfig = {}): AnalysisResult {
     };
     analysis.segmentationByClose(values.slice(0, i + 1), segR);
 
-    // const analysisR = {
-    //   trendReversals: getTrendReversalSignals(segR.segmentation),
-    //   breakouts: getBreakoutSignals(values, segR),
-    //   trendStrength: calculateTrendStrength(segR.segmentation),
-    // };
-
-    result.trendStrength.push(calculateTrendStrength(segR.segmentation));
+    const ts = calculateTrendStrength(segR.segmentation);
+    result.trendStrength.push(ts);
+    result.longTrendStrength.push(ts);
 
     sumTrendStrength += result.trendStrength[i];
+    sumLongTrendStrength += result.longTrendStrength[i];
 
-    if (i >= period) {
-      sumTrendStrength -= result.trendStrength[i - period];
+    if (i >= short) {
+      sumTrendStrength -= result.trendStrength[i - short];
+      sumLongTrendStrength -= result.longTrendStrength[i - long];
 
-      result.trendStrength[i] = sumTrendStrength / period;
+      result.trendStrength[i] = sumTrendStrength / short;
+      result.longTrendStrength[i] = sumLongTrendStrength / long;
     } else {
       result.trendStrength[i] = sumTrendStrength / (i + 1);
+      result.longTrendStrength[i] = sumLongTrendStrength / (i + 1);
     }
   }
 
