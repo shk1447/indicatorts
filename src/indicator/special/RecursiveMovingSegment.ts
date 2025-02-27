@@ -420,12 +420,17 @@ export function rms(values: number[], config: RMSConfig = {}): AnalysisResult {
 
     if (i >= short) {
       sumTrendStrength -= result.trendStrength[i - short];
-      sumLongTrendStrength -= result.longTrendStrength[i - long];
 
       result.trendStrength[i] = sumTrendStrength / short;
-      result.longTrendStrength[i] = sumLongTrendStrength / long;
     } else {
       result.trendStrength[i] = sumTrendStrength / (i + 1);
+    }
+
+    if (i >= long) {
+      sumLongTrendStrength -= result.longTrendStrength[i - long];
+
+      result.longTrendStrength[i] = sumLongTrendStrength / long;
+    } else {
       result.longTrendStrength[i] = sumLongTrendStrength / (i + 1);
     }
   }
