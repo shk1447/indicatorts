@@ -180,14 +180,14 @@ export class StockAnalysis {
         result.segmentation[result.segmentation.length - 1][
           trend_type + '_point'
         ].push({
-          degree: min_degree,
+          degree: min_degree * (trend_type === 'upward' ? 1 : -1),
           close: _close,
           diff: diff,
           date: (min_idx + 1) * 1000,
           seg_idx: result.segmentation.length - 1,
         });
         result[trend_type + '_point'].push({
-          degree: min_degree,
+          degree: min_degree * (trend_type === 'upward' ? 1 : -1),
           close: _close,
           diff: diff,
           date: (min_idx + 1) * 1000,
@@ -268,47 +268,6 @@ export class StockAnalysis {
   }
 }
 
-function getTrendReversalSignals(segments: SegmentationResult['segmentation']) {
-  const signals = [];
-  for (let i = 1; i < segments.length; i++) {
-    if (segments[i].type !== segments[i - 1].type) {
-      signals.push({
-        index: i,
-        type: segments[i].type === 'upward' ? 'buy' : 'sell',
-        strength: Math.abs(segments[i].degree - segments[i - 1].degree),
-      });
-    }
-  }
-  return signals;
-}
-
-function getBreakoutSignals(data: number[], result: SegmentationResult) {
-  const analysis = new StockAnalysis();
-  const currentPrice = data[data.length - 1];
-  const currentIndex = data.length - 1;
-
-  const { resist, support } = analysis.cross_point(
-    result,
-    currentPrice,
-    currentIndex
-  );
-
-  const resistanceLevels = resist.map((r) => {
-    return r.close;
-  });
-
-  const supportLevels = support.map((s) => {
-    return s.close;
-  });
-
-  return {
-    resistanceBreak: resist.length > 0,
-    supportBreak: support.length > 0,
-    resistanceLevels,
-    supportLevels,
-  };
-}
-
 function simpleCalculateTrendStrength(
   segments: SegmentationResult['segmentation']
 ) {
@@ -331,20 +290,22 @@ function calculateTrendStrength(segments: SegmentationResult['segmentation']) {
     if (seg.type === 'upward') {
       count = seg.upward_point.length;
       if (count > 0) {
-        avgDiff = seg.upward_point.reduce((sum, p) => sum + p.diff, 0) / count;
+        avgDiff =
+          seg.upward_point.reduce((sum, p) => sum + p.degree, 0) / count;
       }
     } else {
       count = seg.downward_point.length;
       if (count > 0) {
         avgDiff =
-          seg.downward_point.reduce((sum, p) => sum + p.diff, 0) / count;
+          seg.downward_point.reduce((sum, p) => sum + p.degree, 0) / count;
       }
     }
 
-    return seg.degree * (1 + avgDiff * count);
+    return (seg.degree + avgDiff) / 2;
   };
 
   const currentSeg = segments[segments.length - 1];
+  // const prevSeg =
   const currentStrength = calculateSegmentStrength(currentSeg);
 
   const totalStrength = segments.reduce(
@@ -356,18 +317,12 @@ function calculateTrendStrength(segments: SegmentationResult['segmentation']) {
   return currentStrength - avgStrength;
 }
 
-export interface RMSConfig {
-  short?: number;
-  long?: number;
-}
+export interface RTSConfig {}
 
 /**
  * The default configuration of RMS.
  */
-export const RMSDefaultConfig: Required<RMSConfig> = {
-  short: 20,
-  long: 60,
-};
+export const RTSDefaultConfig: Required<RTSConfig> = {};
 
 /**
  * Simple moving average (SMA).
@@ -376,67 +331,42 @@ export const RMSDefaultConfig: Required<RMSConfig> = {
  * @return SMA values.
  */
 
-export type AnalysisResult = {
-  // trendReversals: { index: number; type: string; strength: number }[];
-  // breakouts: {
-  //   resistanceBreak: boolean;
-  //   supportBreak: boolean;
-  //   resistanceLevels: number[];
-  //   supportLevels: number[];
-  // };
+let _code: string = '';
+let _cacheResult: number[] = [];
 
-  trendStrength: number[];
-  longTrendStrength: number[];
-};
-
-export function rms(values: number[], config: RMSConfig = {}): AnalysisResult {
-  const { short, long } = { ...RMSDefaultConfig, ...config };
+export function rts(
+  code: string,
+  values: number[],
+  config: RTSConfig = {}
+): number[] {
   const analysis = new StockAnalysis();
 
-  const result: AnalysisResult = {
-    trendStrength: [],
-    longTrendStrength: [],
-  };
+  if (code !== _code) {
+    _cacheResult = [];
+    _code = code; // 새로운 코드로 갱신
+  }
 
-  let sumTrendStrength = 0;
-  let sumLongTrendStrength = 0;
+  // 기존 결과와 비교해서 새로 추가해야 할 값이 있는지 확인
+  const startIndex = _cacheResult.length;
 
-  for (let i = 0; i < values.length; i++) {
-    const segR: SegmentationResult = {
-      init_trend: 1,
-      curr_trend: 1,
-      segmentation: [],
-      upward_point: [],
-      downward_point: [],
-    };
-    analysis.segmentationByClose(values.slice(0, i + 1), segR);
+  if (values.length > startIndex) {
+    for (let i = startIndex; i < values.length; i++) {
+      const segR: SegmentationResult = {
+        init_trend: 1,
+        curr_trend: 1,
+        segmentation: [],
+        upward_point: [],
+        downward_point: [],
+      };
+      analysis.segmentationByClose(values.slice(0, i + 1), segR);
 
-    const ts = calculateTrendStrength(segR.segmentation);
-    result.trendStrength.push(ts);
-    result.longTrendStrength.push(ts);
-
-    sumTrendStrength += result.trendStrength[i];
-    sumLongTrendStrength += result.longTrendStrength[i];
-
-    if (i >= short) {
-      sumTrendStrength -= result.trendStrength[i - short];
-
-      result.trendStrength[i] = sumTrendStrength / short;
-    } else {
-      result.trendStrength[i] = sumTrendStrength / (i + 1);
-    }
-
-    if (i >= long) {
-      sumLongTrendStrength -= result.longTrendStrength[i - long];
-
-      result.longTrendStrength[i] = sumLongTrendStrength / long;
-    } else {
-      result.longTrendStrength[i] = sumLongTrendStrength / (i + 1);
+      const ts = calculateTrendStrength(segR.segmentation);
+      _cacheResult.push(ts);
     }
   }
 
-  return result;
+  return _cacheResult;
 }
 
 // Export full name
-export { rms as recursiveMovingSegment };
+export { rts as recursiveTrendStrength };
