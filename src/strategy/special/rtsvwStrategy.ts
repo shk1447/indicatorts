@@ -14,11 +14,21 @@ export function rtsvwStrategy(
 
   for (let i = 0; i < actions.length; i++) {
     if (i > 1) {
-      if (
-        rtsResult.support_count[i - 1] == 0 &&
-        rtsResult.support_count[i] > 0 &&
-        result[i] - result[i - 1] > result[i - 1] - result[i - 2]
-      ) {
+      if (result[i] - result[i - 1] > result[i - 1] - result[i - 2]) {
+        console.log(
+          'prev : ',
+          rtsResult.resist_count[i - 1],
+          rtsResult.support_count[i - 1],
+          rtsResult.future_resist_count[i - 1],
+          rtsResult.future_support_count[i - 1]
+        );
+        console.log(
+          'current : ',
+          rtsResult.resist_count[i],
+          rtsResult.support_count[i],
+          rtsResult.future_resist_count[i],
+          rtsResult.future_support_count[i]
+        );
         actions[i] = Action.BUY;
       } else {
         actions[i] = Action.SELL;
