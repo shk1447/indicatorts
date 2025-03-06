@@ -6,7 +6,7 @@ export function rtsvwStrategy(
   code: string,
   asset: Asset,
   config: RTSVWConfig = {}
-): { actions: Action[]; result: number[] } {
+): { actions: Action[] } {
   const rtsResult = rts(code, asset.closings, {});
   const result = rtsVolumeWeighted(code, asset.closings, asset.volumes, config);
 
@@ -28,5 +28,5 @@ export function rtsvwStrategy(
     }
   }
 
-  return { actions, result };
+  return { actions };
 }
