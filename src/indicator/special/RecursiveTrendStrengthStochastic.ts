@@ -44,12 +44,15 @@ export function rtss(
 
   const rtsResults = rts(code, values, {});
 
-  const highestHigh = mmax(rtsResults, { period: kPeriod });
-  const lowestLow = mmin(rtsResults, { period: kPeriod });
+  const highestHigh = mmax(rtsResults.strength, { period: kPeriod });
+  const lowestLow = mmin(rtsResults.strength, { period: kPeriod });
 
   const kValue = multiplyBy(
     100,
-    divide(subtract(rtsResults, lowestLow), subtract(highestHigh, lowestLow))
+    divide(
+      subtract(rtsResults.strength, lowestLow),
+      subtract(highestHigh, lowestLow)
+    )
   );
 
   const dValue = sma(kValue, { period: dPeriod });

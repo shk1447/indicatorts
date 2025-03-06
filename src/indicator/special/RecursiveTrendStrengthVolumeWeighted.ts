@@ -27,7 +27,7 @@ export function rtsvw(
 
   const rtsResults = rts(code, values, {});
 
-  const result = vwma(rtsResults, volumes, { period });
+  const result = vwma(rtsResults.strength, volumes, { period });
 
   return result;
 }

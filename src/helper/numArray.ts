@@ -45,6 +45,24 @@ export function add(values1: number[], values2: number[]): number[] {
 }
 
 /**
+ * Avg values2 to values1.
+ * @param values1 values one.
+ * @param values2 values two.
+ * @return result array.
+ */
+export function avg(values1: number[], values2: number[]): number[] {
+  checkSameLength(values1, values2);
+
+  const result = new Array<number>(values1.length);
+
+  for (let i = 0; i < result.length; i++) {
+    result[i] = (values1[i] + values2[i]) / 2;
+  }
+
+  return result;
+}
+
+/**
  * Adds n to values.
  * @param n add value.
  * @param values values array.
@@ -205,11 +223,11 @@ export function shiftRightBy(n: number, values: number[]): number[] {
  * @returns shifted and filled values.
  */
 export function shiftLeftAndFillBy(
-    n: number,
-    fill: number,
-    values: number[]
+  n: number,
+  fill: number,
+  values: number[]
 ): number[] {
-  const length = values.length
+  const length = values.length;
   const result: number[] = Array(length).fill(fill);
 
   for (let i = n; i < length; i++) {

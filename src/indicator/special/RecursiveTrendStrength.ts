@@ -204,42 +204,6 @@ export class StockAnalysis {
     }
   }
 
-  cross_point(result: any, pick: number, idx: number) {
-    let cross: { date: number; close: number }[] = [];
-    result.upward_point.forEach((up: any, up_idx: any) => {
-      result.downward_point.forEach((down: any, down_idx: any) => {
-        var test = this.getLineIntersect(
-          up,
-          up.diff / 1000,
-          down,
-          down.diff / 1000
-        );
-        var std = up.date < down.date ? up : down;
-        var std_idx = std.seg_idx;
-
-        if (
-          test.close >= result.segmentation[std_idx].min &&
-          result.segmentation[std_idx].max >= test.close
-        ) {
-          cross.push(test);
-        }
-      });
-    });
-
-    var resist = cross.filter((d: any) => {
-      return d.close >= pick;
-    });
-
-    var support = cross.filter((d: any) => {
-      return d.close <= pick;
-    });
-
-    return {
-      resist: resist,
-      support: support,
-    };
-  }
-
   getLineIntersect(
     point1: any,
     slope1: any,
@@ -266,6 +230,90 @@ export class StockAnalysis {
 
     return result;
   }
+
+  cross_point(result: any, pick: number, idx: number) {
+    let cross: { date: number; close: number }[] = [];
+    result.upward_point.forEach((up: any, up_idx: any) => {
+      result.downward_point.forEach((down: any, down_idx: any) => {
+        var test = this.getLineIntersect(
+          up,
+          up.diff / 1000,
+          down,
+          down.diff / 1000
+        );
+        var std = up.date < down.date ? up : down;
+        var std_idx = std.seg_idx;
+
+        if (
+          test.close >= result.segmentation[std_idx].min &&
+          result.segmentation[std_idx].max >= test.close
+        ) {
+          cross.push(test);
+        }
+      });
+    });
+
+    var resist = cross.filter((d: any) => {
+      return d.close >= pick && idx > d.date;
+    });
+
+    var support = cross.filter((d: any) => {
+      return d.close <= pick && idx > d.date;
+    });
+
+    var future_resist = cross.filter((d: any) => {
+      return d.close >= pick && idx <= d.date;
+    });
+
+    var future_support = cross.filter((d: any) => {
+      return d.close <= pick && idx <= d.date;
+    });
+
+    return {
+      resist: resist,
+      support: support,
+      future_resist,
+      future_support,
+    };
+  }
+}
+
+function getBreakoutPrices(data: number[], result: SegmentationResult) {
+  const analysis = new StockAnalysis();
+  const currentPrice = data[data.length - 1];
+  const currentIndex = data.length - 1;
+
+  const { resist, support, future_resist, future_support } =
+    analysis.cross_point(result, currentPrice, currentIndex);
+
+  return {
+    resist_count: resist.length,
+    support_count: support.length,
+    future_resist_count: future_resist.length,
+    future_support_count: future_support.length,
+    resist:
+      resist.length > 0
+        ? resist.map((r) => r.close).reduce((acc, curr) => acc + curr, 0) /
+          resist.length
+        : currentPrice,
+    support:
+      support.length > 0
+        ? support.map((s) => s.close).reduce((acc, curr) => acc + curr, 0) /
+          support.length
+        : currentPrice,
+    future_resist:
+      future_resist.length > 0
+        ? future_resist
+            .map((r) => r.close)
+            .reduce((acc, curr) => acc + curr, 0) / future_resist.length
+        : currentPrice,
+    future_support:
+      future_support.length > 0
+        ? future_support
+            .map((s) => s.close)
+            .reduce((acc, curr) => acc + curr, 0) / future_support.length
+        : currentPrice,
+  };
 }
 
 function simpleCalculateTrendStrength(
@@ -324,6 +372,18 @@ export interface RTSConfig {}
  */
 export const RTSDefaultConfig: Required<RTSConfig> = {};
 
+export type RTSResult = {
+  strength: number[];
+  support: number[];
+  resist: number[];
+  future_support: number[];
+  future_resist: number[];
+  support_count: number[];
+  resist_count: number[];
+  future_support_count: number[];
+  future_resist_count: number[];
+};
+
 /**
  * Simple moving average (SMA).
  * @param values values array.
@@ -332,22 +392,42 @@ export const RTSDefaultConfig: Required<RTSConfig> = {};
  */
 
 let _code: string = '';
-let _cacheResult: number[] = [];
+let _cacheResult: RTSResult = {
+  strength: [],
+  support: [],
+  resist: [],
+  future_support: [],
+  future_resist: [],
+  support_count: [],
+  resist_count: [],
+  future_support_count: [],
+  future_resist_count: [],
+};
 
 export function rts(
   code: string,
   values: number[],
   config: RTSConfig = {}
-): number[] {
+): RTSResult {
   const analysis = new StockAnalysis();
 
-  if (code !== _code) {
-    _cacheResult = [];
+  if (code != _code) {
+    _cacheResult = {
+      strength: [],
+      support: [],
+      resist: [],
+      future_support: [],
+      future_resist: [],
+      support_count: [],
+      resist_count: [],
+      future_support_count: [],
+      future_resist_count: [],
+    };
     _code = code; // 새로운 코드로 갱신
   }
 
   // 기존 결과와 비교해서 새로 추가해야 할 값이 있는지 확인
-  const startIndex = _cacheResult.length;
+  const startIndex = _cacheResult.strength.length;
 
   if (values.length > startIndex) {
     for (let i = startIndex; i < values.length; i++) {
@@ -361,7 +441,18 @@ export function rts(
       analysis.segmentationByClose(values.slice(0, i + 1), segR);
 
       const ts = calculateTrendStrength(segR.segmentation);
-      _cacheResult.push(ts);
+
+      const breakout = getBreakoutPrices(values.slice(0, i + 1), segR);
+      _cacheResult.strength.push(ts);
+      _cacheResult.support.push(breakout.support);
+      _cacheResult.support_count.push(breakout.support_count);
+      _cacheResult.resist.push(breakout.resist);
+      _cacheResult.resist_count.push(breakout.resist_count);
+
+      _cacheResult.future_support.push(breakout.future_support);
+      _cacheResult.future_support_count.push(breakout.future_support_count);
+      _cacheResult.future_resist.push(breakout.future_resist);
+      _cacheResult.future_resist_count.push(breakout.future_resist_count);
     }
   }
 

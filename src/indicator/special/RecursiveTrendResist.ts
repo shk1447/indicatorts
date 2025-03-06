@@ -3,18 +3,20 @@
 /* eslint-disable no-var */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { rsi } from '../momentum/relativeStrengthIndex';
+import { avg } from '../../helper/numArray';
+import { ema } from '../trend/exponentialMovingAverage';
+import { sma } from '../trend/simpleMovingAverage';
 import { rts } from './RecursiveTrendStrength';
 
-export interface RTSRConfig {
+export interface RTS_ResistConfig {
   period?: number;
 }
 
 /**
  * The default configuration of RMS.
  */
-export const RTSRDefaultConfig: Required<RTSRConfig> = {
-  period: 14,
+export const RTS_ResistDefaultConfig: Required<RTS_ResistConfig> = {
+  period: 20,
 };
 
 /**
@@ -24,19 +26,18 @@ export const RTSRDefaultConfig: Required<RTSRConfig> = {
  * @return SMA values.
  */
 
-export function rtsr(
+export function rtsResist(
   code: string,
   values: number[],
-  config: RTSRConfig = {}
+  config: RTS_ResistConfig = {}
 ): number[] {
-  const { period } = { ...RTSRDefaultConfig, ...config };
+  const { period } = { ...RTS_ResistDefaultConfig, ...config };
 
   const rtsResults = rts(code, values, {});
 
-  const result = rsi(rtsResults.strength, { period });
+  const result = ema(avg(rtsResults.resist, rtsResults.support), {
+    period,
+  });
 
   return result;
 }
-
-// Export full name
-export { rtsr as rtsRSI };

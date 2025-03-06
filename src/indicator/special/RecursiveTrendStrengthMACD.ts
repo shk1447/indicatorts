@@ -41,8 +41,8 @@ export function rtsm(
 
   const rtsResults = rts(code, values, {});
 
-  const shortResults = ema(rtsResults, { period: short });
-  const longResults = ema(rtsResults, { period: long });
+  const shortResults = ema(rtsResults.strength, { period: short });
+  const longResults = ema(rtsResults.strength, { period: long });
 
   return {
     shortTrendStrength: shortResults,

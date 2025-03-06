@@ -1,5 +1,5 @@
 import { subtract } from '../../helper/numArray';
-import { RTSVMResult, RTSVMConfig, rtsVWMA } from '../../indicator/index';
+import { RTSVMResult, RTSVMConfig, rtsVWMA, rts } from '../../indicator/index';
 import { Action } from '../action';
 import { Asset } from '../asset';
 
@@ -8,6 +8,7 @@ export function rtsvmStrategy(
   asset: Asset,
   config: RTSVMConfig = {}
 ): { actions: Action[]; result: RTSVMResult } {
+  const test = rts(code, asset.closings, {});
   const result = rtsVWMA(code, asset.closings, asset.volumes, config);
 
   const actions = new Array<number>(result.shortTrendStrength.length);
@@ -19,7 +20,12 @@ export function rtsvmStrategy(
 
   for (let i = 0; i < actions.length; i++) {
     if (i > 0) {
-      if (oscillator[i] > 0 && oscillator[i - 1] <= 0) {
+      if (
+        oscillator[i] > 0 &&
+        oscillator[i - 1] <= 0 &&
+        test.support_count[i - 1] == 0 &&
+        test.support_count[i] > 0
+      ) {
         actions[i] = Action.BUY;
       } else {
         actions[i] = Action.SELL;

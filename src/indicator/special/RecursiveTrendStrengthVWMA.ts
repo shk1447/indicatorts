@@ -41,8 +41,8 @@ export function rtsvm(
 
   const rtsResults = rts(code, values, {});
 
-  const shortResults = vwma(rtsResults, volumes, { period: short });
-  const longResults = vwma(rtsResults, volumes, { period: long });
+  const shortResults = vwma(rtsResults.strength, volumes, { period: short });
+  const longResults = vwma(rtsResults.strength, volumes, { period: long });
 
   return {
     shortTrendStrength: shortResults,
