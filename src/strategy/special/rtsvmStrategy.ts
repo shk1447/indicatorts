@@ -20,21 +20,12 @@ export function rtsvmStrategy(
 
   for (let i = 0; i < actions.length; i++) {
     if (i > 0) {
-      if (oscillator[i] > 0 && oscillator[i - 1] <= 0) {
-        console.log(
-          'prev : ',
-          rtsResult.resist_count[i - 1],
-          rtsResult.support_count[i - 1],
-          rtsResult.future_resist_count[i - 1],
-          rtsResult.future_support_count[i - 1]
-        );
-        console.log(
-          'current : ',
-          rtsResult.resist_count[i],
-          rtsResult.support_count[i],
-          rtsResult.future_resist_count[i],
-          rtsResult.future_support_count[i]
-        );
+      if (
+        oscillator[i] > 0 &&
+        oscillator[i - 1] <= 0 &&
+        rtsResult.resist[i - 1] > rtsResult.support[i - 1] &&
+        rtsResult.resist[i - 1] <= rtsResult.support[i]
+      ) {
         actions[i] = Action.BUY;
       } else {
         actions[i] = Action.SELL;

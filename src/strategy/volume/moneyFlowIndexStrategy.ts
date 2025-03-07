@@ -32,8 +32,10 @@ export function mfiStrategy(
   const actions = result.map((value) => {
     if (value >= 80) {
       return Action.SELL;
-    } else {
+    } else if (value <= 20) {
       return Action.BUY;
+    } else {
+      return Action.HOLD;
     }
   });
 
