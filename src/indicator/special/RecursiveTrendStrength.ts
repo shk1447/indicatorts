@@ -6,6 +6,7 @@
 export type SegmentationResult = {
   init_trend: 1 | -1;
   curr_trend: 1 | -1;
+  recent_trend: number;
   segmentation: {
     from: number;
     to: number;
@@ -373,6 +374,7 @@ export interface RTSConfig {}
 export const RTSDefaultConfig: Required<RTSConfig> = {};
 
 export type RTSResult = {
+  recent_trend: number[];
   strength: number[];
   support: number[];
   resist: number[];
@@ -413,6 +415,7 @@ export function rts(
 
   if (code != _code) {
     _cacheResult = {
+      recent_trend: [],
       strength: [],
       support: [],
       resist: [],
@@ -430,15 +433,27 @@ export function rts(
   const startIndex = _cacheResult.strength.length;
 
   if (values.length > startIndex) {
+    let prevSegR: SegmentationResult | undefined = undefined;
     for (let i = startIndex; i < values.length; i++) {
       const segR: SegmentationResult = {
         init_trend: 1,
         curr_trend: 1,
+        recent_trend: 0,
         segmentation: [],
         upward_point: [],
         downward_point: [],
       };
+
       analysis.segmentationByClose(values.slice(0, i + 1), segR);
+
+      if (prevSegR !== undefined) {
+        if (
+          prevSegR.curr_trend == segR.curr_trend &&
+          prevSegR.segmentation.length - segR.segmentation.length > 0
+        ) {
+          segR.recent_trend = segR.curr_trend > 0 ? +1 : -1;
+        }
+      }
 
       const ts = calculateTrendStrength(segR.segmentation);
 
@@ -453,6 +468,7 @@ export function rts(
       _cacheResult.future_support_count.push(breakout.future_support_count);
       _cacheResult.future_resist.push(breakout.future_resist);
       _cacheResult.future_resist_count.push(breakout.future_resist_count);
+      prevSegR = segR;
     }
   }
 
