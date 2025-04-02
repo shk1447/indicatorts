@@ -395,6 +395,7 @@ export type RTSResult = {
 
 let _code: string = '';
 let _cacheResult: RTSResult = {
+  recent_trend: [],
   strength: [],
   support: [],
   resist: [],
@@ -405,6 +406,7 @@ let _cacheResult: RTSResult = {
   future_support_count: [],
   future_resist_count: [],
 };
+let _preSegR: SegmentationResult | undefined = undefined;
 
 export function rts(
   code: string,
@@ -426,6 +428,7 @@ export function rts(
       future_support_count: [],
       future_resist_count: [],
     };
+    _preSegR = undefined;
     _code = code; // 새로운 코드로 갱신
   }
 
@@ -433,7 +436,6 @@ export function rts(
   const startIndex = _cacheResult.strength.length;
 
   if (values.length > startIndex) {
-    let prevSegR: SegmentationResult | undefined = undefined;
     for (let i = startIndex; i < values.length; i++) {
       const segR: SegmentationResult = {
         init_trend: 1,
@@ -446,10 +448,10 @@ export function rts(
 
       analysis.segmentationByClose(values.slice(0, i + 1), segR);
 
-      if (prevSegR !== undefined) {
+      if (_preSegR !== undefined) {
         if (
-          prevSegR.curr_trend == segR.curr_trend &&
-          prevSegR.segmentation.length - segR.segmentation.length > 0
+          _preSegR.curr_trend == segR.curr_trend &&
+          _preSegR.segmentation.length - segR.segmentation.length > 0
         ) {
           segR.recent_trend = segR.curr_trend > 0 ? +1 : -1;
         }
@@ -468,7 +470,8 @@ export function rts(
       _cacheResult.future_support_count.push(breakout.future_support_count);
       _cacheResult.future_resist.push(breakout.future_resist);
       _cacheResult.future_resist_count.push(breakout.future_resist_count);
-      prevSegR = segR;
+      _cacheResult.recent_trend.push(segR.recent_trend);
+      _preSegR = segR;
     }
   }
 
