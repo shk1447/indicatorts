@@ -366,12 +366,16 @@ function calculateTrendStrength(segments: SegmentationResult['segmentation']) {
   return currentStrength - avgStrength;
 }
 
-export interface RTSConfig {}
+export interface RTSConfig {
+  cacheDisable?: boolean;
+}
 
 /**
  * The default configuration of RMS.
  */
-export const RTSDefaultConfig: Required<RTSConfig> = {};
+export const RTSDefaultConfig: Required<RTSConfig> = {
+  cacheDisable: false,
+};
 
 export type RTSResult = {
   recent_trend: number[];
@@ -393,86 +397,55 @@ export type RTSResult = {
  * @return SMA values.
  */
 
-let _code: string = '';
-let _cacheResult: RTSResult = {
-  recent_trend: [],
-  strength: [],
-  support: [],
-  resist: [],
-  future_support: [],
-  future_resist: [],
-  support_count: [],
-  resist_count: [],
-  future_support_count: [],
-  future_resist_count: [],
-};
-let _preSegR: SegmentationResult | undefined = undefined;
-
-export function rts(
-  code: string,
-  values: number[],
-  config: RTSConfig = {}
-): RTSResult {
-  const analysis = new StockAnalysis();
-
-  if (code != _code) {
-    _cacheResult = {
-      recent_trend: [],
-      strength: [],
-      support: [],
-      resist: [],
-      future_support: [],
-      future_resist: [],
-      support_count: [],
-      resist_count: [],
-      future_support_count: [],
-      future_resist_count: [],
-    };
-    _preSegR = undefined;
-    _code = code; // 새로운 코드로 갱신
-  }
+export function rts(value: {
+  closings: number[];
+  segs: SegmentationResult[];
+}): RTSResult {
+  let _preSegR: SegmentationResult | undefined = undefined;
+  const _cacheResult: RTSResult = {
+    recent_trend: [],
+    strength: [],
+    support: [],
+    resist: [],
+    future_support: [],
+    future_resist: [],
+    support_count: [],
+    resist_count: [],
+    future_support_count: [],
+    future_resist_count: [],
+  };
 
   // 기존 결과와 비교해서 새로 추가해야 할 값이 있는지 확인
-  const startIndex = _cacheResult.strength.length;
 
-  if (values.length > startIndex) {
-    for (let i = startIndex; i < values.length; i++) {
-      const segR: SegmentationResult = {
-        init_trend: 1,
-        curr_trend: 1,
-        recent_trend: 0,
-        segmentation: [],
-        upward_point: [],
-        downward_point: [],
-      };
+  for (let i = 0; i < value.segs.length; i++) {
+    const segR: SegmentationResult = value.segs[i];
 
-      analysis.segmentationByClose(values.slice(0, i + 1), segR);
-
-      if (_preSegR !== undefined) {
-        if (
-          _preSegR.curr_trend == segR.curr_trend &&
-          _preSegR.segmentation.length - segR.segmentation.length > 0
-        ) {
-          segR.recent_trend = segR.curr_trend > 0 ? +1 : -1;
-        }
+    if (_preSegR !== undefined) {
+      if (
+        _preSegR.curr_trend == segR.curr_trend &&
+        _preSegR.segmentation.length - segR.segmentation.length > 0
+      ) {
+        segR.recent_trend = segR.curr_trend > 0 ? +1 : -1;
+      } else {
+        segR.recent_trend = _preSegR.recent_trend;
       }
-
-      const ts = calculateTrendStrength(segR.segmentation);
-
-      const breakout = getBreakoutPrices(values.slice(0, i + 1), segR);
-      _cacheResult.strength.push(ts);
-      _cacheResult.support.push(breakout.support);
-      _cacheResult.support_count.push(breakout.support_count);
-      _cacheResult.resist.push(breakout.resist);
-      _cacheResult.resist_count.push(breakout.resist_count);
-
-      _cacheResult.future_support.push(breakout.future_support);
-      _cacheResult.future_support_count.push(breakout.future_support_count);
-      _cacheResult.future_resist.push(breakout.future_resist);
-      _cacheResult.future_resist_count.push(breakout.future_resist_count);
-      _cacheResult.recent_trend.push(segR.recent_trend);
-      _preSegR = segR;
     }
+
+    const ts = calculateTrendStrength(segR.segmentation);
+
+    const breakout = getBreakoutPrices(value.closings.slice(0, i + 1), segR);
+    _cacheResult.strength.push(ts);
+    _cacheResult.support.push(breakout.support);
+    _cacheResult.support_count.push(breakout.support_count);
+    _cacheResult.resist.push(breakout.resist);
+    _cacheResult.resist_count.push(breakout.resist_count);
+
+    _cacheResult.future_support.push(breakout.future_support);
+    _cacheResult.future_support_count.push(breakout.future_support_count);
+    _cacheResult.future_resist.push(breakout.future_resist);
+    _cacheResult.future_resist_count.push(breakout.future_resist_count);
+    _cacheResult.recent_trend.push(segR.recent_trend);
+    _preSegR = segR;
   }
 
   return _cacheResult;
